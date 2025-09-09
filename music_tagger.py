@@ -242,7 +242,7 @@ def update_genre_tag(file_path: str, tags: List[str]) -> bool:
 
 def find_audio_files(path: str, since_date: Optional[datetime] = None) -> List[str]:
     """Find audio files in a directory, optionally filtered by creation date."""
-    audio_extensions = {'.mp3', '.m4a', '.flac', '.wav', '.aac', '.ogg', '.wma'}
+    audio_extensions = {'.mp3', '.m4a', '.flac', '.wav', '.aac', '.ogg', '.wma', '.aif', '.aiff'}
     files = []
     
     path_obj = Path(path)
