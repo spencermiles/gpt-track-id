@@ -262,7 +262,7 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without making changes')
     parser.add_argument('--api-key', help='OpenAI API key (or set OPENAI_API_KEY env var)')
     parser.add_argument('--since', type=parse_since_date, help='Only process files created since this date/time. Format: YYYY-MM-DD, 7d (7 days ago), or 24h (24 hours ago)')
-    parser.add_argument('--workers', type=int, default=5, help='Number of parallel workers for processing batches (default: 5)')
+    parser.add_argument('--workers', type=int, default=10, help='Number of parallel workers for processing batches (default: 5)')
     
     args = parser.parse_args()
     
