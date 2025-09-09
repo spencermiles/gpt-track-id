@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional
+import random
 
 try:
     from mutagen import File as MutagenFile
@@ -115,29 +116,59 @@ Return the results as JSON in this format:
 {tracks_text}
 </tracks>"""
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-5",
-            messages=[{"role": "user", "content": prompt}],
-            reasoning_effort="minimal"
-        )
-                
-        # Try to parse JSON response
-        response_text = response.choices[0].message.content.strip()
-        
-        # Extract JSON from response (in case there's extra text)
-        start_idx = response_text.find('{')
-        end_idx = response_text.rfind('}') + 1
-        if start_idx >= 0 and end_idx > start_idx:
-            json_text = response_text[start_idx:end_idx]
-            return json.loads(json_text)
-        else:
-            print("Error: Could not parse JSON from ChatGPT response")
-            return {}
+    max_retries = 5
+    base_delay = 1.0
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-5",
+                messages=[{"role": "user", "content": prompt}],
+                reasoning_effort="minimal"
+            )
+                    
+            # Try to parse JSON response
+            response_text = response.choices[0].message.content.strip()
             
-    except Exception as e:
-        print(f"Error calling ChatGPT API: {e}")
-        return {}
+            # Extract JSON from response (in case there's extra text)
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}') + 1
+            if start_idx >= 0 and end_idx > start_idx:
+                json_text = response_text[start_idx:end_idx]
+                return json.loads(json_text)
+            else:
+                print("Error: Could not parse JSON from ChatGPT response")
+                return {}
+                
+        except Exception as e:
+            error_str = str(e)
+            if "rate_limit_exceeded" in error_str or "429" in error_str:
+                if attempt < max_retries - 1:
+                    # Extract wait time from error message if available
+                    wait_time = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                    
+                    # Try to extract suggested wait time from error message
+                    if "Please try again in" in error_str:
+                        try:
+                            import re
+                            match = re.search(r'Please try again in (\d+)ms', error_str)
+                            if match:
+                                suggested_wait = int(match.group(1)) / 1000.0
+                                wait_time = max(wait_time, suggested_wait)
+                        except:
+                            pass
+                    
+                    print(f"Rate limit hit, waiting {wait_time:.1f}s before retry {attempt + 1}/{max_retries}")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"Rate limit exceeded after {max_retries} attempts: {e}")
+                    return {}
+            else:
+                print(f"Error calling ChatGPT API: {e}")
+                return {}
+    
+    return {}
 
 
 def update_genre_tag(file_path: str, tags: List[str]) -> bool:
@@ -273,7 +304,7 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without making changes')
     parser.add_argument('--api-key', help='OpenAI API key (or set OPENAI_API_KEY env var)')
     parser.add_argument('--since', type=parse_since_date, help='Only process files created since this date/time. Format: YYYY-MM-DD, 7d (7 days ago), or 24h (24 hours ago)')
-    parser.add_argument('--workers', type=int, default=10, help='Number of parallel workers for processing batches (default: 5)')
+    parser.add_argument('--workers', type=int, default=5, help='Number of parallel workers for processing batches (default: 5)')
     
     args = parser.parse_args()
     
