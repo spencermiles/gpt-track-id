@@ -141,22 +141,48 @@ Return the results as JSON in this format:
 
 
 def update_genre_tag(file_path: str, tags: List[str]) -> bool:
-    """Update the genre tag in the music file."""
+    """Update the genre tag in the music file, adding to existing genres."""
     try:
         audio_file = MutagenFile(file_path)
         if audio_file is None:
             return False
         
-        # Create genre string
-        genre_string = ' - '.join(tags)
+        # Get existing genre tags
+        existing_genres = []
         
         # Handle ID3 tags (MP3)
         if hasattr(audio_file, 'add_tags'):
             if audio_file.tags is None:
                 audio_file.add_tags()
-            audio_file.tags['TCON'] = TCON(encoding=3, text=genre_string)
+            if 'TCON' in audio_file.tags:
+                existing_text = str(audio_file.tags['TCON'])
+                if existing_text:
+                    existing_genres = [g.strip() for g in existing_text.split('-')]
         # Handle other formats
         elif 'TCON' in audio_file:
+            existing_text = str(audio_file['TCON'][0]) if audio_file['TCON'] else ''
+            if existing_text:
+                existing_genres = [g.strip() for g in existing_text.split('-')]
+        elif '\xa9gen' in audio_file:  # M4A
+            existing_text = str(audio_file['\xa9gen'][0]) if audio_file['\xa9gen'] else ''
+            if existing_text:
+                existing_genres = [g.strip() for g in existing_text.split('-')]
+        elif 'GENRE' in audio_file:
+            existing_text = str(audio_file['GENRE'][0]) if audio_file['GENRE'] else ''
+            if existing_text:
+                existing_genres = [g.strip() for g in existing_text.split('-')]
+        
+        # Combine existing and new tags, remove duplicates while preserving order
+        all_tags = existing_genres + tags
+        unique_tags = list(dict.fromkeys(all_tags))
+        
+        # Create combined genre string
+        genre_string = ' - '.join(unique_tags)
+        
+        # Update the appropriate field
+        if hasattr(audio_file, 'add_tags'):
+            audio_file.tags['TCON'] = TCON(encoding=3, text=genre_string)
+        elif 'TCON' in audio_file or hasattr(audio_file, 'tags'):
             audio_file['TCON'] = [genre_string]
         elif '\xa9gen' in audio_file:  # M4A
             audio_file['\xa9gen'] = [genre_string]
