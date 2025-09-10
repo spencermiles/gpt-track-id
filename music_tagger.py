@@ -90,7 +90,7 @@ def get_chatgpt_metadata(tracks: List[Dict], api_key: str) -> Dict:
     prompt = f"""
 <TASK>
 You're a DJ, categorizing your digital collection into various tags for efficient recall during sets. For the following tracks, please return the following fields:
-- genres (>=1, House, Lo-fi House, Leftfield House, Deep House, Tech House, Minimal, Techno, Dub Techno, Acid House, Acid Techno, Dub, Hip Hop, Rap, R&B, Dubstep, UK Bass, Bass, UK Garage, Disco, Ambient, Experimental, Hypnotic, Electro, Trance, Italo, Edits, Drum & Bass, Jungle, Breaks, Happy Hardcore, IDM, Footwork, Reggae, Pop)
+- genres (>=1, House, Lo-fi House, Leftfield House, Deep House, Tech House, Minimal, Techno, Dub Techno, Acid House, Acid Techno, Dub, Hip Hop, Rap, R&B, Dubstep, UK Bass, Bass, UK Garage, Disco, Ambient, Experimental, Hypnotic, Electro, Trance, Italo, Edits, Drum & Bass, Jungle, Breaks, Happy Hardcore, IDM, Footwork, Reggae, Pop, Downtempo)
 - region (>=1, Detroit, Chicago, NYC, US, UK, Europe, Berlin, Japan, Italy, Canada, Australia, Latin America, Africa)
 - era (60s, 70s, 80s, 90s, 2000s, 2010s, 2020s)
 </TASK>
